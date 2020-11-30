@@ -12,6 +12,7 @@ pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 pub enum Keyword {
     Async,
     On,
+    AndReturn
 }
 
 fn keywordise(token: Token) -> Token {
@@ -19,6 +20,7 @@ fn keywordise(token: Token) -> Token {
         Token::Ident(ident) => match ident.to_string().as_str() {
             "async" => Token::Keyword(Keyword::Async, ident),
             "on" => Token::Keyword(Keyword::On, ident),
+            "and_return" => Token::Keyword(Keyword::AndReturn, ident),
             _ => Token::Ident(ident),
         },
         _ => token,
