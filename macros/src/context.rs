@@ -38,6 +38,7 @@ pub enum Attribute {
         async_keyword: Option<Token>,
         args: Tokens,
         body: Tokens,
+        and_return: Option<Tokens>,
     },
 }
 
@@ -73,6 +74,7 @@ impl Debug for Attribute {
                 async_keyword,
                 args,
                 body,
+                and_return: _,
             } => {
                 let args: Vec<String> = args.iter().map(stringify_attr_value).collect();
                 let attrs: Vec<String> = body.iter().map(stringify_attr_value).collect();

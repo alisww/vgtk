@@ -30,6 +30,7 @@ extern {
         "!" => Token::Punct1('!', _),
         "on" => Token::Keyword(lexer::Keyword::On, _),
         "async" => Token::Keyword(lexer::Keyword::Async, _),
+        "and_return" => Token::Keyword(lexer::Keyword::AndReturn, _),
         "==" => Token::Punct2('=', '=', _, _),
         "!=" => Token::Punct2('!', '=', _, _),
         "<=" => Token::Punct2('<', '=', _, _),
@@ -212,9 +213,11 @@ Property: Attribute = <child_qual:"@"?> <path:(Ident "::")*> <name:Ident> "=" <v
     }
 };
 
-Handler: Attribute = "on" <name:Ident> "=" <async_keyword:"async"?> <args:ClosureArgs> <body:RustExpr> => {
+HackyReturn: Tokens = "and_return" "=" <value:RustExpr> => value;
+
+Handler: Attribute = "on" <name:Ident> "=" <async_keyword:"async"?> <args:ClosureArgs> <body:RustExpr> <and_return:HackyReturn?> => {
     Attribute::Handler {
-        name, async_keyword, args, body
+        name, async_keyword, args, body, and_return
     }
 };
 

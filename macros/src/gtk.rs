@@ -73,11 +73,17 @@ pub fn expand_component(gtk: &GtkComponent) -> TokenStream {
                 async_keyword,
                 args,
                 body,
+                and_return,
             } => {
                 if let Some(async_keyword) = async_keyword {
                     return quote_spanned! {async_keyword.span() =>
                         compile_error! { "component callbacks cannot be async" }
                     };
+                }
+                if let Some(and_return) = and_return {
+                    return quote_spanned! { and_return.first().expect("and_return is empty!").span() =>
+                        compile_error! { "cannot specify return value for component callbacks" }
+                    }
                 }
                 let name = Ident::new(&format!("on_{}", name.to_string()), name.span());
                 let args = to_stream(args);
@@ -152,7 +158,8 @@ pub fn expand_widget(gtk: &GtkWidget) -> TokenStream {
                 async_keyword,
                 args,
                 body,
-            } => expand_handler(&gtk.name, &name, async_keyword.as_ref(), &args, &body),
+                and_return,
+            } => expand_handler(&gtk.name, &name, async_keyword.as_ref(), &args, &body, and_return.as_deref()),
         });
     }
     for child in &gtk.children {
@@ -262,6 +269,7 @@ pub fn expand_handler(
     async_keyword: Option<&Token>,
     args: &[Token],
     body: &[Token],
+    and_return: Option<&[Token]>,
 ) -> TokenStream {
     let object_type = to_stream(object_type);
     let args_s = to_stream(args);
@@ -270,6 +278,15 @@ pub fn expand_handler(
     let signal_name = to_string_literal(name);
     let location = args.first().expect("signal handler is empty!").span();
     let signal_id = to_string_literal(format!("{:?}", location));
+    let return_value = match and_return {
+        Some(return_args) => {
+            let val = to_stream(return_args);
+            quote! {
+                return #val;
+            }
+        },
+        None => TokenStream::new()
+    };
     let inner_block = if async_keyword.is_some() {
         quote!({
             let scope = scope.clone();
@@ -277,6 +294,7 @@ pub fn expand_handler(
                 async move {
                     let msg = async move { #body_s }.await;
                     scope.send_message(msg);
+                    #return_value
                 }
             )
         })
@@ -284,6 +302,7 @@ pub fn expand_handler(
         quote!({
             let msg = { #body_s };
             scope.send_message(msg);
+            #return_value
         })
     };
     quote!(
